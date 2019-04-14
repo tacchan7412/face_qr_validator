@@ -9,15 +9,16 @@ from qrcode_decoder import qr_decode
 
 threshold = 100000
 
-
 def main(path, correct_label):
     qr_flag = False
     fr = FaceRecognizer()
     video = cv2.VideoCapture(path)
 
+    face_correct_cnt = 0
     face_wrong_cnt = 0
     face_undetected_cnt = 0
     multiple_face_cnt = 0
+    cfd_high = 0
     cnt = 0
 
     while video.isOpened():
@@ -36,13 +37,18 @@ def main(path, correct_label):
 
         # face recognition
         faces = crop_image(frame)
-        if len(faces) >= 1:
+        if len(faces) == 1:
             x, y, w, h = faces[0]
             image = cv2.resize(frame[y: y + h, x: x + w], (200, 200), interpolation=cv2.INTER_LINEAR)
-            image = np.mean(image, -1)
-            label, _ = fr.recognizer.predict(image)
+            image_pil = Image.fromarray(np.uint8(image)).convert('L')
+            image = np.array(image_pil, 'uint8')
+            label, cfd = fr.recognizer.predict(image)
             if label != correct_label:
                 face_wrong_cnt += 1
+            else:
+                face_correct_cnt += 1
+            if cfd > 40:
+                cfd_high += 1
         elif len(faces) > 1:
             # print('multiple faces are detected!')
             multiple_face_cnt += 1
@@ -56,9 +62,11 @@ def main(path, correct_label):
 
     video.release()
     print('total frames', cnt)
+    print('correct', face_correct_cnt)
     print('wrong', face_wrong_cnt)
     print('undetected', face_undetected_cnt)
     print('multiple', multiple_face_cnt)
+    # print('confidence high', cfd_high)
 
 
 if __name__ == '__main__':
