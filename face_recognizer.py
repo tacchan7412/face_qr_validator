@@ -71,11 +71,8 @@ if __name__ == '__main__':
     # テスト画像を取得
     test_images, test_labels, test_files = fr.get_images_and_labels(test_path)
 
-    i = 0
-    while i < len(test_labels):
+    for i in range(len(test_labels)):
         # テスト画像に対して予測実施
         label, confidence = fr.recognizer.predict(test_images[i])
         # 予測結果をコンソール出力
         print("Test Image: {}, Predicted Label: {}, Confidence: {}".format(test_files[i], label, confidence))
-
-        i += 1

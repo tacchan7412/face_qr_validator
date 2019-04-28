@@ -9,10 +9,16 @@ from qrcode_decoder import qr_decode
 
 threshold = 100000
 
+
 def main(path, correct_label):
     qr_flag = False
+    correct_label = 16
     fr = FaceRecognizer()
     video = cv2.VideoCapture(path)
+    width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH) + 0.5)
+    height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter('output.mp4', fourcc, 20.0, (width, height))
 
     face_correct_cnt = 0
     face_wrong_cnt = 0
@@ -49,6 +55,14 @@ def main(path, correct_label):
                 face_correct_cnt += 1
             if cfd > 40:
                 cfd_high += 1
+
+            # write rectangle to indicate where the face is
+            color = (0, 255, 0) if label == correct_label else (0, 0, 255)
+            cv2.rectangle(frame, (x, y), (x+w, y+h), color, 3)
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            txt = 'Ayumu' if label == correct_label else 'not Ayumu'
+            cv2.putText(frame, txt + '%.3f' % (cfd), (x, y), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
         elif len(faces) > 1:
             # print('multiple faces are detected!')
             multiple_face_cnt += 1
@@ -60,7 +74,10 @@ def main(path, correct_label):
             print(cnt)
             break
 
+        out.write(frame)
+
     video.release()
+    out.release()
     print('total frames', cnt)
     print('correct', face_correct_cnt)
     print('wrong', face_wrong_cnt)
