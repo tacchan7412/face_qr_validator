@@ -12,13 +12,12 @@ threshold = 100000
 
 def main(path, correct_label):
     qr_flag = False
-    correct_label = 16
     fr = FaceRecognizer()
     video = cv2.VideoCapture(path)
     width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH) + 0.5)
     height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter('output.mp4', fourcc, 20.0, (width, height))
+    out = cv2.VideoWriter('data/output.mp4', fourcc, 20.0, (width, height))
 
     face_correct_cnt = 0
     face_wrong_cnt = 0
@@ -45,7 +44,8 @@ def main(path, correct_label):
         faces = crop_image(frame)
         if len(faces) == 1:
             x, y, w, h = faces[0]
-            image = cv2.resize(frame[y: y + h, x: x + w], (200, 200), interpolation=cv2.INTER_LINEAR)
+            image = cv2.resize(frame[y: y + h, x: x + w], (200, 200),
+                               interpolation=cv2.INTER_LINEAR)
             image_pil = Image.fromarray(np.uint8(image)).convert('L')
             image = np.array(image_pil, 'uint8')
             label, cfd = fr.recognizer.predict(image)
@@ -61,7 +61,8 @@ def main(path, correct_label):
             cv2.rectangle(frame, (x, y), (x+w, y+h), color, 3)
             font = cv2.FONT_HERSHEY_SIMPLEX
             txt = 'Ayumu' if label == correct_label else 'not Ayumu'
-            cv2.putText(frame, txt + '%.3f' % (cfd), (x, y), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+            cv2.putText(frame, txt + '%.3f' % (cfd), (x, y), font, 1,
+                        (255, 255, 255), 2, cv2.LINE_AA)
 
         elif len(faces) > 1:
             # print('multiple faces are detected!')

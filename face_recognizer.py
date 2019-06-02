@@ -8,55 +8,46 @@ cascadePath = "config/haarcascade_frontalface_default.xml"
 faceCascade = cv2.CascadeClassifier(cascadePath)
 
 
-def crop_image(image):
-    faces = faceCascade.detectMultiScale(image)
+def crop_image(image, scaleFactor=1.11, minNeighbors=3, minSize=(200, 200)):
+    faces = faceCascade.detectMultiScale(image, scaleFactor=scaleFactor,
+                                         minNeighbors=minNeighbors,
+                                         minSize=minSize)
     return faces
 
 
 class FaceRecognizer():
     def __init__(self):
-        # トレーニング画像
         train_path = './data/train'
 
-        # Haar-like特徴分類器
-
-        # 顔認識器の構築 for OpenCV 2
-        #   ※ OpenCV3ではFaceRecognizerはcv2.faceのモジュールになります
         # EigenFace
-        #recognizer = cv2.createEigenFaceRecognizer()
+        # self.recognizer = cv2.face.EigenFaceRecognizer_create()
         # FisherFace
-        #recognizer = cv2.createFisherFaceRecognizer()
+        self.recognizer = cv2.face.FisherFaceRecognizer_create()
         # LBPH
-        self.recognizer = cv2.face.LBPHFaceRecognizer_create()
+        # self.recognizer = cv2.face.LBPHFaceRecognizer_create()
         self.train(train_path)
 
-    # 指定されたpath内の画像を取得
     def get_images_and_labels(self, path):
-        # 画像を格納する配列
         images = []
-        # ラベルを格納する配列
         labels = []
-        # ファイル名を格納する配列
         files = []
         for f in os.listdir(path):
-            # 画像のパス
-            image_path = os.path.join(path, f)
-            # グレースケールで画像を読み込む
-            image_pil = Image.open(image_path).convert('L')
-            # NumPyの配列に格納
-            image = np.array(image_pil, 'uint8')
-            # Haar-like特徴分類器で顔を検知
-            faces = crop_image(image)
-            # 検出した顔画像の処理
-            for (x, y, w, h) in faces:
-                # 顔を 200x200 サイズにリサイズ
-                roi = cv2.resize(image[y: y + h, x: x + w], (200, 200), interpolation=cv2.INTER_LINEAR)
-                # 画像を配列に格納
-                images.append(roi)
-                # ファイル名からラベルを取得
-                labels.append(int(f[7:9]))
-                # ファイル名を配列に格納
-                files.append(f)
+            if not os.path.isdir(os.path.join(path, f)):
+                continue
+            else:
+                label = int(f)
+                for fn in os.listdir(os.path.join(path, f)):
+                    image_path = os.path.join(path, f, fn)
+                    # to grayscale
+                    image_pil = Image.open(image_path).convert('L')
+                    image = np.array(image_pil, 'uint8')
+                    faces = crop_image(image)
+                    for (x, y, w, h) in faces:
+                        roi = cv2.resize(image[y: y + h, x: x + w], (200, 200),
+                                         interpolation=cv2.INTER_LINEAR)
+                        images.append(roi)
+                        labels.append(label)
+                        files.append(os.path.join(f, fn))
 
         return images, labels, files
 
@@ -70,9 +61,11 @@ if __name__ == '__main__':
     fr = FaceRecognizer()
     # テスト画像を取得
     test_images, test_labels, test_files = fr.get_images_and_labels(test_path)
+    print(len(test_images))
 
     for i in range(len(test_labels)):
         # テスト画像に対して予測実施
         label, confidence = fr.recognizer.predict(test_images[i])
         # 予測結果をコンソール出力
-        print("Test Image: {}, Predicted Label: {}, Confidence: {}".format(test_files[i], label, confidence))
+        print("Test Image: {}, Predicted Label: {}, Confidence: {}"
+              .format(test_files[i], label, confidence))
